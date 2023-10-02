@@ -1,25 +1,29 @@
-# Function to test an already trained deepESN struct
-function __do_test_deepESN_mnist!(deepE, args::Dict)
+# Function to test an already trained deepESNIA struct
+function __do_test_deepESNIA_mnist!(deepE, args::Dict)
     test_length = args[:test_length]
 
     classes_Y    = Array{Tuple{Float64,Int,Int}}[]
     wrong_class  = []
     deepE.Y        = []
 
-    if args[:gpu]
-        # deepE.Y = CuArray(deepE.Y)
-        f = (u) -> CuArray(reshape(u, :, 1))
-    else
-        f = (u) -> reshape(u, :, 1)
-    end
+    # if args[:gpu]
+    #     # deepE.Y = CuArray(deepE.Y)
+    #     f = (u) -> CuArray(reshape(u, :, 1))
+    # else
+    #     f = (u) -> reshape(u, :, 1)
+    # end
+
+    f = args[:gpu] ? (u) -> CuArray(reshape(u, :, 1)) : (u) -> reshape(u, :, 1)
 
     for t in 1:test_length
                 
+        fu = f(args[:test_data][:,:,t])
         __update(deepE.esns[1], args[:test_data][:,:,t], f )
-    
+
         for i in 2:length(deepE.esns)
-            __update(deepE.esns[i], deepE.esns[i-1].x, f )
+            __update(deepE.esns[i], vcat(deepE.esns[i-1].x, fu ), f )
         end
+
         x = vcat(f(args[:test_data][:,:,t]), deepE.esns[end].x, f([1]) )
 
 

@@ -24,24 +24,25 @@ end
 
 repit = 1
 _params = Dict{Symbol,Any}(
-     :gpu           => true
-    ,:wb            => false
-    ,:wb_logger_name=> "deepESN_tanh_mnist_GPU"
-    ,:num_esns      => 5
+     :gpu           => false
+    ,:wb            => true
+    ,:wb_logger_name=> "deepESN-IA_tanh_mnist_GPU"
+    ,:num_esns      => 2
+    ,:nodes         => 10000
     ,:classes       => [0,1,2,3,4,5,6,7,8,9]
     ,:beta          => 1.0e-8
     ,:initial_transient=>0
-    ,:train_length  => size(train_y)[1] #-55000
-    ,:test_length   => size(test_y)[1] #-9000
-    ,:train_f       => __do_train_deepESN_mnist!
-    ,:test_f        => __do_test_deepESN_mnist!
+    ,:train_length  => size(train_y)[1] #-59990
+    ,:test_length   => size(test_y)[1]  #-9997
+    ,:train_f       => __do_train_deepESNIA_mnist!
+    ,:test_f        => __do_test_deepESNIA_mnist!
 )
 
 
-px      = 28 # rand([14,20,25,28])
+px      = 14 # rand([14,20,25,28])
 sz      = (px,px)
-# train_x = transform_mnist(train_x, sz, _params[:train_length] )
-# test_x  = transform_mnist(test_x, sz, _params[:test_length])
+train_x = transform_mnist(train_x, sz, _params[:train_length] )
+test_x  = transform_mnist(test_x, sz, _params[:test_length])
 
 
 
@@ -60,7 +61,7 @@ function do_batch(_params_esn, _params,sd)
     esns = [
         ESN( 
              R      = _params[:gpu] ? CuArray(new_R(nodes[i], density=densities[i], rho=rhos[i])) : new_R(nodes[i], density=densities[i], rho=rhos[i])
-            ,R_in   = _params[:gpu] ? CuArray( I(nodes[i]) ) : I(nodes[i])
+            ,R_in   = _params[:gpu] ? CuArray( rand(Uniform(-sigmas[1],sigmas[1]), nodes[i], nodes[i] + im_sz ) ) : rand(Uniform(-sigmas[1],sigmas[1]), nodes[i], nodes[i] + im_sz )
             ,R_scaling = r_scales[i]
             ,alpha  = alphas[i]
             ,rho    = rhos[i]
@@ -82,6 +83,7 @@ function do_batch(_params_esn, _params,sd)
         tm_train = @elapsed begin
             deepE.train_function(deepE,_params)
         end
+        println("\nEND OF TRAIN\n")
         tm_test = @elapsed begin
             deepE.test_function(deepE,_params)
         end
@@ -111,7 +113,7 @@ for _ in 1:repit
         ,:density  => rand(Uniform(0.01,0.2),_params[:num_esns])
         ,:rho      => rand(Uniform(0.5,1.5),_params[:num_esns])
         ,:sigma    => rand(Uniform(0.5,1.5),_params[:num_esns])
-        ,:nodes    => [500 for _ in 1:_params[:num_esns] ] # rand([500, px*px ,1000],_params[:num_esns])
+        ,:nodes    => [_params[:nodes] for _ in 1:_params[:num_esns] ] # rand([500, px*px ,1000],_params[:num_esns])
         ,:sgmds    => [tanh for _ in 1:_params[:num_esns] ]
     )
     _params[:image_size]   = sz
