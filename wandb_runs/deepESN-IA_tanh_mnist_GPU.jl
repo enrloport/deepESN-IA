@@ -26,9 +26,9 @@ repit = 1
 _params = Dict{Symbol,Any}(
      :gpu           => false
     ,:wb            => true
-    ,:wb_logger_name=> "deepESN-IA_tanh_mnist_GPU"
-    ,:num_esns      => 2
-    ,:nodes         => 10000
+    ,:wb_logger_name=> "deepESN-IA_Iwin_tanh_mnist"
+    ,:num_esns      => 3
+    ,:nodes         => 1000
     ,:classes       => [0,1,2,3,4,5,6,7,8,9]
     ,:beta          => 1.0e-8
     ,:initial_transient=>0
@@ -58,24 +58,29 @@ function do_batch(_params_esn, _params,sd)
     alphas   = _params_esn[:alpha]
     r_scales = _params_esn[:R_scaling]
 
-    esns = [
+    # Only first Reservoir has a real R_in. Identity matrix is used for the next layers.
+    esn1 = ESN( 
+        R      = _params[:gpu] ? CuArray(new_R(nodes[1], density=densities[1], rho=rhos[1])) : new_R(nodes[1], density=densities[1], rho=rhos[1])
+       ,R_in   = _params[:gpu] ? CuArray(rand(Uniform(-sigmas[1],sigmas[1]), nodes[1], im_sz )) : rand(Uniform(-sigmas[1],sigmas[1]), nodes[1], im_sz )
+       ,R_scaling = r_scales[1], alpha = alphas[1], rho = rhos[1], sigma = sigmas[1], sgmd = sgmds[1]
+    )
+    esn2 = [
         ESN( 
              R      = _params[:gpu] ? CuArray(new_R(nodes[i], density=densities[i], rho=rhos[i])) : new_R(nodes[i], density=densities[i], rho=rhos[i])
-            ,R_in   = _params[:gpu] ? CuArray( rand(Uniform(-sigmas[1],sigmas[1]), nodes[i], nodes[i] + im_sz ) ) : rand(Uniform(-sigmas[1],sigmas[1]), nodes[i], nodes[i] + im_sz )
+            ,R_in   = _params[:gpu] ? CuArray( rand(Uniform(-sigmas[i],sigmas[i]), nodes[i-1], nodes[i-1] + im_sz ) ) : rand(Uniform(-sigmas[i],sigmas[i]), nodes[i-1], nodes[i-1] + im_sz )
             ,R_scaling = r_scales[i]
             ,alpha  = alphas[i]
             ,rho    = rhos[i]
             ,sigma  = sigmas[i]
             ,sgmd   = sgmds[i]
-        ) for i in 1:_params[:num_esns]
+        ) for i in 2:_params[:num_esns]
     ]
-    # Only first Reservoir has a real R_in. Identity matrix is used for the next layers.
-    esns[1].R_in = _params[:gpu] ? CuArray(rand(Uniform(-sigmas[1],sigmas[1]), nodes[1], im_sz )) : rand(Uniform(-sigmas[1],sigmas[1]), nodes[1], im_sz )
-    esns[1].F_in = (f,u) -> esns[1].R_in * f(u)
+    # esns[1].R_in = _params[:gpu] ? CuArray(rand(Uniform(-sigmas[1],sigmas[1]), nodes[1], im_sz )) : rand(Uniform(-sigmas[1],sigmas[1]), nodes[1], im_sz )
+    # esns[1].F_in = (f,u) -> esns[1].R_in * f(u)
 
     tms = @elapsed begin
         deepE = deepESN(
-            esns=esns
+            esns= [esn1, esn2...]
             ,beta=_params[:beta] 
             ,train_function = _params[:train_f]
             ,test_function = _params[:test_f]
@@ -109,7 +114,7 @@ for _ in 1:repit
     Random.seed!(sd)
     _params_esn = Dict{Symbol,Any}(
         :R_scaling => rand(Uniform(0.5,1.5),_params[:num_esns])
-        ,:alpha    => rand(Uniform(0.5,1.0),_params[:num_esns])
+        ,:alpha    => [1.0 for _ in 1:_params[:num_esns]] #rand(Uniform(0.5,1.0),_params[:num_esns])
         ,:density  => rand(Uniform(0.01,0.2),_params[:num_esns])
         ,:rho      => rand(Uniform(0.5,1.5),_params[:num_esns])
         ,:sigma    => rand(Uniform(0.5,1.5),_params[:num_esns])
