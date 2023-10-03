@@ -58,7 +58,6 @@ function do_batch(_params_esn, _params,sd)
     alphas   = _params_esn[:alpha]
     r_scales = _params_esn[:R_scaling]
 
-    # Only first Reservoir has a real R_in. Identity matrix is used for the next layers.
     esn1 = ESN( 
         R      = _params[:gpu] ? CuArray(new_R(nodes[1], density=densities[1], rho=rhos[1])) : new_R(nodes[1], density=densities[1], rho=rhos[1])
        ,R_in   = _params[:gpu] ? CuArray(rand(Uniform(-sigmas[1],sigmas[1]), nodes[1], im_sz )) : rand(Uniform(-sigmas[1],sigmas[1]), nodes[1], im_sz )
@@ -75,8 +74,6 @@ function do_batch(_params_esn, _params,sd)
             ,sgmd   = sgmds[i]
         ) for i in 2:_params[:num_esns]
     ]
-    # esns[1].R_in = _params[:gpu] ? CuArray(rand(Uniform(-sigmas[1],sigmas[1]), nodes[1], im_sz )) : rand(Uniform(-sigmas[1],sigmas[1]), nodes[1], im_sz )
-    # esns[1].F_in = (f,u) -> esns[1].R_in * f(u)
 
     tms = @elapsed begin
         deepE = deepESN(
@@ -114,11 +111,11 @@ for _ in 1:repit
     Random.seed!(sd)
     _params_esn = Dict{Symbol,Any}(
         :R_scaling => rand(Uniform(0.5,1.5),_params[:num_esns])
-        ,:alpha    => [1.0 for _ in 1:_params[:num_esns]] #rand(Uniform(0.5,1.0),_params[:num_esns])
+        ,:alpha    => [1.0 for _ in 1:_params[:num_esns]]
         ,:density  => rand(Uniform(0.01,0.2),_params[:num_esns])
         ,:rho      => rand(Uniform(0.5,1.5),_params[:num_esns])
         ,:sigma    => rand(Uniform(0.5,1.5),_params[:num_esns])
-        ,:nodes    => [_params[:nodes] for _ in 1:_params[:num_esns] ] # rand([500, px*px ,1000],_params[:num_esns])
+        ,:nodes    => [_params[:nodes] for _ in 1:_params[:num_esns] ]
         ,:sgmds    => [tanh for _ in 1:_params[:num_esns] ]
     )
     _params[:image_size]   = sz
