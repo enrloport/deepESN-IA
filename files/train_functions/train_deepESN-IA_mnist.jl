@@ -40,7 +40,7 @@ end
 
 function __do_train_deepESNIA_mnist!(deepE, args)
     num   = args[:train_length]
-    deepE.X = zeros( deepE.esns[1].R_size + args[:image_size][1]*args[:image_size][2] + 1, num )
+    deepE.X = zeros( deepE.esns[end].R_size + args[:image_size][1]*args[:image_size][2] + 1, num )
     # deepE.X = zeros( sum([esn.R_size for esn in deepE.esns]) + args[:image_size][1]*args[:image_size][2] + 1, num)
     #deepE.X = zeros( sum([esn.R_size for esn in deepE.esns]) + args[:image_size][1]*args[:image_size][2] + length(deepE.esns), num)
     for i in 1:length(deepE.esns)
