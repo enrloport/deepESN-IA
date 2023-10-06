@@ -1,12 +1,32 @@
 import pandas as pd
 import wandb
+api = wandb.Api()
 
-run_path = "/elortiz/mnist_singlelayer__grid_search__ESN/t0ujyey3"
-filename = "./csvs/mnist_singlelayer__grid_search__ESN__(500,6000).csv"
+# Project is specified by <entity/project-name>
 
-api  = wandb.Api()
-run  = api.run(run_path)
-hist = run.scan_history()
-df   = pd.DataFrame.from_dict(hist)
+project_name = "deepESN-IA_tanh_mnist_GPU"
+project_name = "deepESN-IA_Iwin_tanh_mnist_GPU"
 
-df.to_csv(filename)
+runs = api.runs("elortiz/" + project_name)
+
+summary_list, config_list, name_list = [], [], []
+for run in runs:
+    # .summary contains the output keys/values for metrics like accuracy.
+    #  We call ._json_dict to omit large files 
+    summary_list.append(run.summary._json_dict)
+
+    # .config contains the hyperparameters.
+    #  We remove special values that start with _.
+    config_list.append(
+        {k: v for k,v in run.config.items()
+            if not k.startswith('_')})
+
+    # .name is the human-readable name of the run.
+    name_list.append(run.name)
+
+sum_df = pd.DataFrame.from_records(summary_list)
+
+sum_df.to_csv(project_name + ".csv")
+
+
+
