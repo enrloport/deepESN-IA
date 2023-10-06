@@ -22,11 +22,11 @@ function transform_mnist(train_x, sz, trl)
     return trx
 end
 
-repit = 1
+repit = 3
 _params = Dict{Symbol,Any}(
-     :gpu           => false
+     :gpu           => true
     ,:wb            => true
-    ,:wb_logger_name=> "deepESN-IA_Iwin_tanh_mnist"
+    ,:wb_logger_name=> "deepESN-IA_tanh_mnist_GPU"
     ,:num_esns      => 3
     ,:nodes         => 1000
     ,:classes       => [0,1,2,3,4,5,6,7,8,9]
@@ -106,56 +106,63 @@ function do_batch(_params_esn, _params,sd)
 end
 
 
+
 for _ in 1:repit
-    sd = rand(1:10000)
-    Random.seed!(sd)
-    _params_esn = Dict{Symbol,Any}(
-        :R_scaling => rand(Uniform(0.5,1.5),_params[:num_esns])
-        ,:alpha    => [1.0 for _ in 1:_params[:num_esns]]
-        ,:density  => rand(Uniform(0.01,0.2),_params[:num_esns])
-        ,:rho      => rand(Uniform(0.5,1.5),_params[:num_esns])
-        ,:sigma    => rand(Uniform(0.5,1.5),_params[:num_esns])
-        ,:nodes    => [_params[:nodes] for _ in 1:_params[:num_esns] ]
-        ,:sgmds    => [tanh for _ in 1:_params[:num_esns] ]
-    )
-    _params[:image_size]   = sz
-    _params[:train_data]   = train_x
-    _params[:test_data]    = test_x
-    _params[:train_labels] = train_y
-    _params[:test_labels]  = test_y
-    par = Dict(
-        "Classical reservoirs" => _params[:num_esns]
-        , "Total nodes"  => sum(_params_esn[:nodes])
-        , "Train length" => _params[:train_length]
-        , "Test length"  => _params[:test_length]
-        , "Resized"      => _params[:image_size][1]
-        , "Nodes per reservoir"=> _params_esn[:nodes]
-        , "Initial transient"=> _params[:initial_transient]
-        , "seed"         => sd
-        , "sgmds"        => _params_esn[:sgmds]
-        , "alphas" => _params_esn[:alpha]
-        , "densities" => _params_esn[:density]
-        , "rhos" => _params_esn[:rho]
-        , "sigmas" => _params_esn[:sigma]
-        , "R_scalings" => _params_esn[:R_scaling]
-        )
-    if _params[:wb]
-        using Logging
-        using Wandb
-        _params[:lg] = wandb_logger(_params[:wb_logger_name])
-        Wandb.log(_params[:lg], par )
-    end
-    display(par)
+    for num_nodes in [2000]
+        for num_esns in [10,9,8,7,6,5,4,3,2,1]
+            _params[:nodes] = num_nodes
+            _params[:num_esns] = num_esns
 
-    r1=[]
-    tm = @elapsed begin
-        r1 = do_batch(_params_esn,_params, sd)
-    end
-    if _params[:wb]
-        close(_params[:lg])
-    end
+            sd = rand(1:10000)
+            Random.seed!(sd)
+            _params_esn = Dict{Symbol,Any}(
+                :R_scaling => rand(Uniform(0.5,1.5),_params[:num_esns])
+                ,:alpha    => [1.0 for _ in 1:_params[:num_esns]]
+                ,:density  => rand(Uniform(0.01,0.2),_params[:num_esns])
+                ,:rho      => rand(Uniform(0.5,1.5),_params[:num_esns])
+                ,:sigma    => rand(Uniform(0.5,1.5),_params[:num_esns])
+                ,:nodes    => [_params[:nodes] for _ in 1:_params[:num_esns] ]
+                ,:sgmds    => [tanh for _ in 1:_params[:num_esns] ]
+            )
+            _params[:image_size]   = sz
+            _params[:train_data]   = train_x
+            _params[:test_data]    = test_x
+            _params[:train_labels] = train_y
+            _params[:test_labels]  = test_y
+            par = Dict(
+                "Layers" => _params[:num_esns]
+                , "Total nodes"  => sum(_params_esn[:nodes])
+                , "Train length" => _params[:train_length]
+                , "Test length"  => _params[:test_length]
+                , "Resized"      => _params[:image_size][1]
+                , "Nodes per layer"=> _params_esn[:nodes]
+                , "Initial transient"=> _params[:initial_transient]
+                , "seed"         => sd
+                , "sgmds"        => _params_esn[:sgmds]
+                , "alphas" => _params_esn[:alpha]
+                , "densities" => _params_esn[:density]
+                , "rhos" => _params_esn[:rho]
+                , "sigmas" => _params_esn[:sigma]
+                , "R_scalings" => _params_esn[:R_scaling]
+                )
+            if _params[:wb]
+                using Logging
+                using Wandb
+                _params[:lg] = wandb_logger(_params[:wb_logger_name])
+                Wandb.log(_params[:lg], par )
+            end
+            display(par)
 
-    printime = _params[:gpu] ? "Time GPU: " * string(tm) :  "Time CPU: " * string(tm) 
-    println("Error: ", r1.error, "\n", printime  )
+            r1=[]
+            tm = @elapsed begin
+                r1 = do_batch(_params_esn,_params, sd)
+            end
+            if _params[:wb]
+                close(_params[:lg])
+            end
 
+            printime = _params[:gpu] ? "Time GPU: " * string(tm) :  "Time CPU: " * string(tm) 
+            println("Error: ", r1.error, "\n", printime  )
+        end
+    end
 end
