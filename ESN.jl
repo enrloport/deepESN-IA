@@ -25,7 +25,7 @@ using StatsBase
 using Suppressor
 
 # Types definition
-Mtx = Union{Matrix,SparseMatrixCSC, Array, CuArray, Diagonal{Bool, Vector{Bool}}}
+Mtx = Union{Matrix,SparseMatrixCSC, Array, CuArray, Diagonal{Bool, Vector{Bool}}, Diagonal{Bool, CuArray{Bool, 1, CUDA.Mem.DeviceBuffer}}}
 Data= Union{DataFrame, Mtx, Vector, Array, CuArray}
 
 # Includes
