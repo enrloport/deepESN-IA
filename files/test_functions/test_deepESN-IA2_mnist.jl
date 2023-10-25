@@ -15,18 +15,25 @@ function __do_test_deepESNIA2_mnist!(deepE, args::Dict)
 
     f = args[:gpu] ? (u) -> CuArray(reshape(u, :, 1)) : (u) -> reshape(u, :, 1)
 
-    for t in 1:test_length
-                
-        fu = f(args[:test_data][:,:,t])
+    function __step(t,fu,f)
         __update(deepE.esns[1], args[:test_data][:,:,t], f )
 
         for i in 2:length(deepE.esns)
             __update(deepE.esns[i], vcat(deepE.esns[i-1].x, fu ), f )
         end
+    end
+
+    for t in 1:test_length
+                
+        fu = f(args[:test_data][:,:,t])
+        
+        for _ in 1:args[:initial_transient]
+            __step(t,fu,f)
+        end
+        __step(t,fu,f)
 
         x = vcat(f(args[:test_data][:,:,t]), [_e.x for _e in deepE.esns]..., f([1]) )
         # x = vcat(f(args[:test_data][:,:,t]), deepE.esns[end].x, f([1]) )
-
 
         pairs  = []
         for c in args[:classes]
