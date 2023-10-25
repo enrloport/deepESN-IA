@@ -22,20 +22,20 @@ function transform_mnist(train_x, sz, trl)
     return trx
 end
 
-repit = 3
+repit = 20
 _params = Dict{Symbol,Any}(
      :gpu           => true
     ,:wb            => true
-    ,:wb_logger_name=> "deepESN-IA_tanh_mnist_GPU"
-    ,:num_esns      => 3
-    ,:nodes         => 1000
+    ,:wb_logger_name=> "deepESN-IA_2.0_tanh_mnist_GPU"
+    ,:num_esns      => 0
+    ,:nodes         => 0
     ,:classes       => [0,1,2,3,4,5,6,7,8,9]
     ,:beta          => 1.0e-8
-    ,:initial_transient=>0
+    ,:initial_transient=>2
     ,:train_length  => size(train_y)[1] #-59990
     ,:test_length   => size(test_y)[1]  #-9997
-    ,:train_f       => __do_train_deepESNIA_mnist!
-    ,:test_f        => __do_test_deepESNIA_mnist!
+    ,:train_f       => __do_train_deepESNIA2_mnist!
+    ,:test_f        => __do_test_deepESNIA2_mnist!
 )
 
 
@@ -109,7 +109,7 @@ end
 
 for _ in 1:repit
     for num_nodes in [2000]
-        for num_esns in [10,9,8,7,6,5,4,3,2,1]
+        for num_esns in [9,8,7,6,5,4,3,2,1]
             _params[:nodes] = num_nodes
             _params[:num_esns] = num_esns
 
@@ -117,7 +117,7 @@ for _ in 1:repit
             Random.seed!(sd)
             _params_esn = Dict{Symbol,Any}(
                 :R_scaling => rand(Uniform(0.5,1.5),_params[:num_esns])
-                ,:alpha    => [1.0 for _ in 1:_params[:num_esns]]
+                ,:alpha    => [0.7 for _ in 1:_params[:num_esns]]
                 ,:density  => rand(Uniform(0.01,0.2),_params[:num_esns])
                 ,:rho      => rand(Uniform(0.5,1.5),_params[:num_esns])
                 ,:sigma    => rand(Uniform(0.5,1.5),_params[:num_esns])
