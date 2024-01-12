@@ -12,23 +12,17 @@ using Wandb
 train_x, train_y = MNIST(split=:train)[:]
 test_x , test_y  = MNIST(split=:test)[:]
 
-# FashionMNIST dataset
-# tr_x, tr_y = FashionMNIST(split=:train)[:]
-# te_x, te_y = FashionMNIST(split=:test)[:]
-
 function transform_mnist(train_x, sz, trl)
     trx = map(x-> x > 0.3 ? 1.0 : x > 0.0 ? 0.5 : 0, train_x)
     trx = mapslices(x-> imresize(x, sz), trx[:,:,1:trl] ,dims=(1,2))
     return trx
 end
 
-repit = 20
+repit = 10
 _params = Dict{Symbol,Any}(
      :gpu           => true
     ,:wb            => true
     ,:wb_logger_name=> "deepESN-IA_2.0_tanh_mnist_GPU"
-    ,:num_esns      => 0
-    ,:nodes         => 0
     ,:classes       => [0,1,2,3,4,5,6,7,8,9]
     ,:beta          => 1.0e-8
     ,:initial_transient=>2
@@ -43,8 +37,6 @@ px      = 14 # rand([14,20,25,28])
 sz      = (px,px)
 train_x = transform_mnist(train_x, sz, _params[:train_length] )
 test_x  = transform_mnist(test_x, sz, _params[:test_length])
-
-
 
 
 function do_batch(_params_esn, _params,sd)
@@ -109,7 +101,7 @@ end
 
 for _ in 1:repit
     for num_nodes in [2000]
-        for num_esns in [9,8,7,6,5,4,3,2,1]
+        for num_esns in [10,8,5,3,1]
             _params[:nodes] = num_nodes
             _params[:num_esns] = num_esns
 
