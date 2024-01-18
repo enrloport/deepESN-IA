@@ -4,8 +4,11 @@ api = wandb.Api()
 
 # Project is specified by <entity/project-name>
 
-project_name = "deepESN-IA_tanh_mnist_GPU"
-project_name = "deepESN-IA_Iwin_tanh_mnist_GPU"
+# project_name = "deepESN-IA_tanh_mnist_GPU"
+# project_name = "deepESN-IA_Iwin_tanh_mnist_GPU"
+
+project_name = "deepESN-IA_2.0_tanh_fashion_CPU"
+# project_name = "deepESN-IA_2.0_tanh_mnist_GPU"
 
 runs = api.runs("elortiz/" + project_name)
 
